@@ -106,7 +106,7 @@
             if (manualInput.trim() !== '') {
                 // Handle manual input
                 scanResults.innerHTML = '<p class="alert alert-success">Scanned Barcode: ' + manualInput + '</p>';
-                xlsx(manualInput);
+                // xlsx(manualInput);
             } else {
                 // Configure QuaggaJS
                 Quagga.init({
@@ -145,8 +145,10 @@
                     document.getElementById('barcodeInput').value = scannedBarcode + '';
                     xlsx(scannedBarcode);
 
+                    
                     // Stop Quagga after a successful scan
                     Quagga.stop();
+                    scanCodeExecuted = false;
 
                     // Close the modal
                     const scanModal = bootstrap.Modal.getInstance(document.getElementById('scanModal'));
