@@ -3,11 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barcode Scanner Test</title>
+  <title>Barcode Scanner</title>
   <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+
+    #scanner-container {
+      position: relative;
+      width: 80%;
+      max-width: 400px;
+    }
+
     #your-camera-element {
       width: 100%;
       height: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
 
     #overlay {
@@ -23,8 +42,13 @@
 </head>
 <body>
 
-<!-- Camera element for QuaggaJS -->
-<video id="your-camera-element"></video>
+<div id="scanner-container">
+  <!-- Camera element for QuaggaJS -->
+  <video id="your-camera-element"></video>
+
+  <!-- Overlay for visual feedback -->
+  <div id="overlay"></div>
+</div>
 
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
