@@ -24,7 +24,8 @@
 
     #your-camera-element {
       width: 100%;
-      height: auto;
+      height: 100%; /* Set height to 100% */
+      object-fit: cover; /* Maintain aspect ratio */
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
@@ -44,11 +45,15 @@
 
 <div id="scanner-container">
   <!-- Camera element for QuaggaJS -->
-  <video id="your-camera-element"></video>
+  <video id="your-camera-element" playsinline></video>
 
   <!-- Overlay for visual feedback -->
   <div id="overlay"></div>
 </div>
+
+<!-- Include QuaggaJS library -->
+<script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+
 
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
