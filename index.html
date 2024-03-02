@@ -15,41 +15,38 @@
 
 <!-- Your JavaScript code -->
 <script>
-  // Include the JavaScript code here// Include QuaggaJS library
-import Quagga from 'quagga';
+  // Set up the configuration for Quagga
+  var config = {
+    inputStream: {
+      name: 'Live',
+      type: 'LiveStream',
+      target: document.querySelector('#your-camera-element'), // Specify your camera element
+    },
+    decoder: {
+      readers: ['code_128_reader', 'ean_reader'], // Specify barcode types you want to read
+    },
+  };
 
-// Set up the configuration for Quagga
-const config = {
-  inputStream: {
-    name: 'Live',
-    type: 'LiveStream',
-    target: document.querySelector('#your-camera-element'), // Specify your camera element
-  },
-  decoder: {
-    readers: ['code_128_reader', 'ean_reader'], // Specify barcode types you want to read
-  },
-};
+  // Start Quagga with the configuration
+  Quagga.init(config, (err) => {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    Quagga.start();
+  });
 
-// Start Quagga with the configuration
-Quagga.init(config, (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-  Quagga.start();
-});
+  // Add an event listener for when a barcode is detected
+  Quagga.onDetected((data) => {
+    console.log('Barcode detected:', data.codeResult.code);
+    
+    // You can send this data to your PHP backend for further processing
+    // Example: Use AJAX to send data to your PHP script
+    // ...
 
-// Add an event listener for when a barcode is detected
-Quagga.onDetected((data) => {
-  console.log('Barcode detected:', data.codeResult.code);
-  
-  // You can send this data to your PHP backend for further processing
-  // Example: Use AJAX to send data to your PHP script
-  // ...
-
-  // Stop Quagga after detecting a barcode (optional)
-  Quagga.stop();
-});
+    // Stop Quagga after detecting a barcode (optional)
+    Quagga.stop();
+  });
 </script>
 
 </body>
