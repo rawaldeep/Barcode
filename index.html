@@ -8,10 +8,6 @@
     #your-camera-element {
       width: 100%;
       height: auto;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
     }
 
     #overlay {
@@ -29,9 +25,6 @@
 
 <!-- Camera element for QuaggaJS -->
 <video id="your-camera-element"></video>
-
-<!-- Overlay for visual feedback -->
-<div id="overlay"></div>
 
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
@@ -84,6 +77,11 @@
     console.log('Barcode detected:', data.codeResult.code);
     Quagga.stop();
   });
+
+  // Create an overlay div for visualization
+  var overlay = document.createElement('div');
+  overlay.id = 'overlay';
+  document.body.appendChild(overlay);
 </script>
 
 </body>
