@@ -12,6 +12,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-direction: column; /* Updated to center the logs */
       height: 100vh;
       background-color: #f0f0f0;
     }
@@ -39,6 +40,16 @@
       pointer-events: none;
       z-index: 2;
     }
+
+    #error-logs {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-width: 80%;
+      overflow-wrap: break-word;
+    }
   </style>
 </head>
 <body>
@@ -54,12 +65,23 @@
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
 
-
-<!-- Include QuaggaJS library -->
-<script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
-
 <!-- Your JavaScript code -->
 <script>
+  // Create an overlay div for visualization
+  var overlay = document.createElement('div');
+  overlay.id = 'overlay';
+  document.body.appendChild(overlay);
+
+  // Create a div for error logs
+  var errorLogsDiv = document.createElement('div');
+  errorLogsDiv.id = 'error-logs';
+  document.body.appendChild(errorLogsDiv);
+
+  function logError(message) {
+    // Log error to the div
+    errorLogsDiv.innerHTML += `<p>${message}</p>`;
+  }
+
   var config = {
     inputStream: {
       name: 'Live',
@@ -73,7 +95,7 @@
 
   Quagga.init(config, (err) => {
     if (err) {
-      console.error(err);
+      logError(`Error initializing Quagga: ${err}`);
       return;
     }
 
@@ -106,11 +128,6 @@
     console.log('Barcode detected:', data.codeResult.code);
     Quagga.stop();
   });
-
-  // Create an overlay div for visualization
-  var overlay = document.createElement('div');
-  overlay.id = 'overlay';
-  document.body.appendChild(overlay);
 </script>
 
 </body>
