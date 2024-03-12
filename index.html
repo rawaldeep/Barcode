@@ -24,11 +24,11 @@
     }
 
     #your-camera-element {
-      width: 100%;
-      height: 100%; /* Set height to 100% */
-      object-fit: cover; /* Maintain aspect ratio */
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        height: 300px; /* Adjust the height as needed */
+        object-fit: cover; /* Maintain aspect ratio */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     }
 
     #overlay {
@@ -56,7 +56,7 @@
 
 <div id="scanner-container">
   <!-- Camera element for QuaggaJS -->
-  <video id="your-camera-element" playsinline></video>
+  <video id="your-camera-element" playsinline autoplay></video>
 
   <!-- Overlay for visual feedback -->
   <div id="overlay"></div>
@@ -67,67 +67,104 @@
 
 <!-- Your JavaScript code -->
 <script>
-  // Create an overlay div for visualization
-  var overlay = document.createElement('div');
-  overlay.id = 'overlay';
-  document.body.appendChild(overlay);
+// Create an overlay div for visualization
+var overlay = document.createElement('div');
+overlay.id = 'overlay';
+document.body.appendChild(overlay);
 
-  // Create a div for error logs
-  var errorLogsDiv = document.createElement('div');
-  errorLogsDiv.id = 'error-logs';
-  document.body.appendChild(errorLogsDiv);
+// Create a div for error logs
+var errorLogsDiv = document.createElement('div');
+errorLogsDiv.id = 'error-logs';
+document.body.appendChild(errorLogsDiv);
 
-  function logError(message) {
+function logError(message) {
     // Log error to the div
     errorLogsDiv.innerHTML += `<p>${message}</p>`;
-  }
+}
 
-  var config = {
+var config = {
     inputStream: {
-      name: 'Live',
-      type: 'LiveStream',
-      target: document.querySelector('#your-camera-element'),
+        name: 'Live',
+        type: 'LiveStream',
+        target: videoElement, // Use the video element directly
+        constraints: {
+            width: 480,
+            height: 320,
+            facingMode: 'environment', // or 'user' for the front camera
+        },
     },
     decoder: {
-      readers: ['code_128_reader', 'ean_reader'],
+        readers: ['code_128_reader', 'ean_reader'],
     },
-  };
+};
 
-  Quagga.init(config, (err) => {
-    if (err) {
-      logError(`Error initializing Quagga: ${err}`);
-      return;
-    }
+var videoElement = document.querySelector('#your-camera-element');
 
-    Quagga.start();
+navigator.mediaDevices.enumerateDevices()
+  .then(devices => {
+    console.log('Available Devices:', devices);
+  })
+  .catch(err => {
+    console.error('Error enumerating devices:', err);
   });
 
-  Quagga.onProcessed((result) => {
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    videoElement.srcObject = stream;
+    console.log('Camera Stream:', stream);
+  })
+  .catch(err => {
+    console.error('Error accessing camera:', err);
+  });
+
+  Quagga.init({
+    inputStream: {
+        type: 'LiveStream',
+        constraints: {
+            width: 480,
+            height: 320,
+            facingMode: 'environment', // or 'user' for the front camera
+        },
+        target: videoElement,
+    },
+    decoder: {
+        readers: ['code_128_reader', 'ean_reader'],
+    },
+}, function (err) {
+    if (err) {
+        logError(`Error initializing Quagga: ${err}`);
+        console.error('Error initializing Quagga:', err);
+        return;
+    }
+    Quagga.start();
+});
+
+Quagga.onDetected((data) => {
+    console.log('Barcode detected:', data.codeResult.code);
+    Quagga.stop();
+});
+
+Quagga.onProcessed((result) => {
     var drawingCtx = Quagga.canvas.ctx.overlay;
     var drawingCanvas = Quagga.canvas.dom.overlay;
 
     if (result) {
-      if (result.boxes) {
-        drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute('width')), parseInt(drawingCanvas.getAttribute('height')));
-        result.boxes.filter((box) => box !== result.box).forEach((box) => {
-          Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: 'green', lineWidth: 2 });
-        });
-      }
+        if (result.boxes) {
+            drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute('width')), parseInt(drawingCanvas.getAttribute('height')));
+            result.boxes.filter((box) => box !== result.box).forEach((box) => {
+                Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: 'green', lineWidth: 2 });
+            });
+        }
 
-      if (result.box) {
-        Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: 'blue', lineWidth: 2 });
-      }
+        if (result.box) {
+            Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: 'blue', lineWidth: 2 });
+        }
 
-      if (result.codeResult && result.codeResult.code) {
-        Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
-      }
+        if (result.codeResult && result.codeResult.code) {
+            Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
+        }
     }
-  });
-
-  Quagga.onDetected((data) => {
-    console.log('Barcode detected:', data.codeResult.code);
-    Quagga.stop();
-  });
+});
 </script>
 
 </body>
