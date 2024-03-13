@@ -3,11 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camera Test</title>
+  <title>Barcode Scanner</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column; /* Updated to center the logs */
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+
+    #your-camera-element {
+        width: 100%;
+        height: 300px; /* Adjust the height as needed */
+        object-fit: cover; /* Maintain aspect ratio */
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+  </style>
 </head>
 <body>
 
 <video id="your-camera-element" playsinline autoplay></video>
+
+<!-- Include QuaggaJS library -->
+<script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
 
 <script>
 var videoElement = document.getElementById('your-camera-element');
@@ -18,6 +42,37 @@ navigator.mediaDevices.getUserMedia({ video: true })
 
     videoElement.onloadedmetadata = function(e) {
       console.log('Camera Stream:', stream);
+
+      // Integrate Quagga
+      Quagga.init({
+          inputStream: {
+              type: 'LiveStream',
+              constraints: {
+                  width: 640, // Adjust as needed
+                  height: 480, // Adjust as needed
+                  facingMode: 'environment', // or 'user' for the front camera
+              },
+              target: videoElement,
+          },
+          decoder: {
+              readers: ['code_128_reader', 'ean_reader'],
+          },
+      }, function (err) {
+          if (err) {
+              console.error('Error initializing Quagga:', err);
+              return;
+          }
+          Quagga.start();
+      });
+
+      Quagga.onDetected((data) => {
+          console.log('Barcode detected:', data.codeResult.code);
+          Quagga.stop();
+      });
+
+      Quagga.onProcessed((result) => {
+          // Include relevant processing logic as needed
+      });
     };
   })
   .catch(err => {
