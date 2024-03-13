@@ -3,25 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Camera Test</title>
+  <title>Barcode Scanner</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #f0f0f0;
+    }
+
+    #your-camera-element {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      border: 2px solid #333;
+      border-radius: 8px;
+    }
+
+    #log-container {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-width: 80%;
+      overflow-wrap: break-word;
+    }
+  </style>
 </head>
 <body>
 
 <video id="your-camera-element" playsinline autoplay></video>
+<div id="log-container"></div>
 
+<script src="https://cdn.rawgit.com/serratus/quaggaJS/0.12.1/dist/quagga.min.js"></script>
 <script>
 var videoElement = document.getElementById('your-camera-element');
+var logContainer = document.getElementById('log-container');
+
+function appendLog(message) {
+  logContainer.innerHTML += '<p>' + message + '</p>';
+}
 
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     videoElement.srcObject = stream;
 
     videoElement.onloadedmetadata = function(e) {
-      console.log('Camera Stream:', stream);
+      appendLog('Camera Stream initialized');
+
+      Quagga.init({
+        inputStream: {
+          name: 'Live',
+          type: 'LiveStream',
+          target: videoElement,
+        },
+        decoder: {
+          readers: ['ean_reader', 'code_128_reader'] // Add more readers if needed
+        }
+      }, function(err) {
+        if (err) {
+          console.error('Error initializing Quagga:', err);
+          appendLog('Error initializing Quagga: ' + err);
+          return;
+        }
+        Quagga.start();
+      });
+
+      Quagga.onDetected(function(result) {
+        var detectedCode = result.codeResult.code;
+        console.log('Barcode detected:', detectedCode);
+        appendLog('Barcode detected: ' + detectedCode);
+        alert('Barcode detected: ' + detectedCode);
+        Quagga.stop();
+      });
     };
   })
   .catch(err => {
     console.error('Error accessing camera:', err);
+    appendLog('Error accessing camera: ' + err);
   });
 </script>
 
