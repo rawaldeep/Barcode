@@ -28,13 +28,22 @@
 </head>
 <body>
 
-<video id="your-camera-element" playsinline autoplay></video>
+<video id="your-camera-element" playsinline autoplay muted></video>
 
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
 
 <script>
 var videoElement = document.getElementById('your-camera-element');
+
+// Handle potential issues with autoplay on mobile
+document.addEventListener('DOMContentLoaded', function () {
+    videoElement.play().then(() => {
+        console.log('Video is playing');
+    }).catch((error) => {
+        console.error('Error playing video:', error);
+    });
+});
 
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
