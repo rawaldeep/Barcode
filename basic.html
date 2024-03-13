@@ -100,10 +100,7 @@ function initQuagga() {
   });
 }
 
-// Start the camera initially
-startCamera();
-
-// Handle potential issues with autoplay on mobile
+// Ensure the camera stream is started after user interaction
 document.body.addEventListener('click', function () {
   if (quaggaInitialized) {
     Quagga.stop();
@@ -111,6 +108,9 @@ document.body.addEventListener('click', function () {
   }
   startCamera();
 });
+
+// Start the camera initially
+startCamera();
 </script>
 
 </body>
