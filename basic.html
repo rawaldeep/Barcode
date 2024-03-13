@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Test</title>
+</head>
+<body>
+
+<video id="your-camera-element" playsinline autoplay></video>
+
+<script>
+var videoElement = document.getElementById('your-camera-element');
+
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+    videoElement.srcObject = stream;
+
+    videoElement.onloadedmetadata = function(e) {
+      console.log('Camera Stream:', stream);
+    };
+  })
+  .catch(err => {
+    console.error('Error accessing camera:', err);
+  });
+</script>
+
+</body>
+</html>
