@@ -35,58 +35,65 @@
 
 <script>
 var videoElement = document.getElementById('your-camera-element');
+var stream;
 
-// Handle potential issues with autoplay on mobile
 document.addEventListener('DOMContentLoaded', function () {
-    videoElement.play().then(() => {
-        console.log('Video is playing');
-    }).catch((error) => {
-        console.error('Error playing video:', error);
-    });
+    startCamera();
 });
 
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => {
-    videoElement.srcObject = stream;
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(cameraStream => {
+            stream = cameraStream;
+            videoElement.srcObject = cameraStream;
 
-    videoElement.onloadedmetadata = function(e) {
-      console.log('Camera Stream:', stream);
+            videoElement.onloadedmetadata = function (e) {
+                console.log('Camera Stream:', cameraStream);
 
-      // Integrate Quagga
-      Quagga.init({
-          inputStream: {
-              type: 'LiveStream',
-              constraints: {
-                  width: 640, // Adjust as needed
-                  height: 480, // Adjust as needed
-                  facingMode: 'environment', // or 'user' for the front camera
-              },
-              target: videoElement,
-          },
-          decoder: {
-              readers: ['code_128_reader', 'ean_reader'],
-          },
-      }, function (err) {
-          if (err) {
-              console.error('Error initializing Quagga:', err);
-              return;
-          }
-          Quagga.start();
-      });
+                // Integrate Quagga
+                Quagga.init({
+                    inputStream: {
+                        type: 'LiveStream',
+                        constraints: {
+                            width: 640, // Adjust as needed
+                            height: 480, // Adjust as needed
+                            facingMode: 'environment', // or 'user' for the front camera
+                        },
+                        target: videoElement,
+                    },
+                    decoder: {
+                        readers: ['code_128_reader', 'ean_reader'],
+                    },
+                }, function (err) {
+                    if (err) {
+                        console.error('Error initializing Quagga:', err);
+                        return;
+                    }
+                    Quagga.start();
+                });
 
-      Quagga.onDetected((data) => {
-          console.log('Barcode detected:', data.codeResult.code);
-          Quagga.stop();
-      });
+                Quagga.onDetected((data) => {
+                    console.log('Barcode detected:', data.codeResult.code);
+                    Quagga.stop();
+                });
 
-      Quagga.onProcessed((result) => {
-          // Include relevant processing logic as needed
-      });
-    };
-  })
-  .catch(err => {
-    console.error('Error accessing camera:', err);
-  });
+                Quagga.onProcessed((result) => {
+                    // Include relevant processing logic as needed
+                });
+            };
+        })
+        .catch(err => {
+            console.error('Error accessing camera:', err);
+        });
+}
+
+// Handle potential issues with autoplay on mobile
+videoElement.addEventListener('click', function () {
+    if (stream && stream.getTracks().length > 0) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    startCamera();
+});
 </script>
 
 </body>
