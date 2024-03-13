@@ -62,6 +62,9 @@
   <div id="overlay"></div>
 </div>
 
+<!-- Error logs div -->
+<div id="error-logs"></div>
+
 <!-- Include QuaggaJS library -->
 <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
 
@@ -73,53 +76,59 @@ overlay.id = 'overlay';
 document.body.appendChild(overlay);
 
 // Create a div for error logs
-var errorLogsDiv = document.createElement('div');
-errorLogsDiv.id = 'error-logs';
-document.body.appendChild(errorLogsDiv);
+var errorLogsDiv = document.getElementById('error-logs');
 
-var videoElement = document.querySelector('#your-camera-element'); // Move this line above its usage
-
-function logError(message) {
-    // Log error to the div
-    errorLogsDiv.innerHTML += `<p>${message}</p>`;
+// Function to log messages to the error div
+function logMessage(message, isError = false) {
+    errorLogsDiv.innerHTML += `<p style="color: ${isError ? 'red' : 'black'};">${message}</p>`;
 }
 
-var config = {
-    inputStream: {
-        name: 'Live',
-        type: 'LiveStream',
-        target: videoElement, // Use the video element directly
-        constraints: {
-            width: 480,
-            height: 320,
-            facingMode: 'environment', // or 'user' for the front camera
-        },
-    },
-    decoder: {
-        readers: ['code_128_reader', 'ean_reader'],
-    },
+// Override console.log to also log to the error div
+console.log = function (message) {
+    logMessage(message);
+    // Uncomment the line below if you want to keep the original console.log behavior
+    // return originalConsoleLog.apply(console, arguments);
 };
+
+var videoElement = document.querySelector('#your-camera-element');
 
 navigator.mediaDevices.enumerateDevices()
   .then(devices => {
-    console.log('Available Devices:', devices);
+    logMessage('Available Devices: ' + JSON.stringify(devices));
   })
   .catch(err => {
-    console.error('Error enumerating devices:', err);
+    logMessage('Error enumerating devices: ' + err, true);
   });
 
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     videoElement.srcObject = stream;
-    console.log('Camera Stream:', stream);
+
+    videoElement.onloadedmetadata = function(e) {
+      logMessage('Camera Stream: ' + JSON.stringify(stream));
+      Quagga.start();
+    };
   })
   .catch(err => {
-    console.error('Error accessing camera:', err);
+    logMessage('Error accessing camera: ' + err, true);
   });
 
-Quagga.init(config, function (err) {
+Quagga.init({
+    inputStream: {
+        type: 'LiveStream',
+        constraints: {
+            width: 480,
+            height: 320,
+            facingMode: 'environment', // or 'user' for the front camera
+        },
+        target: videoElement,
+    },
+    decoder: {
+        readers: ['code_128_reader', 'ean_reader'],
+    },
+}, function (err) {
     if (err) {
-        logError(`Error initializing Quagga: ${err}`);
+        logMessage('Error initializing Quagga: ' + err, true);
         console.error('Error initializing Quagga:', err);
         return;
     }
@@ -127,7 +136,7 @@ Quagga.init(config, function (err) {
 });
 
 Quagga.onDetected((data) => {
-    console.log('Barcode detected:', data.codeResult.code);
+    logMessage('Barcode detected: ' + data.codeResult.code);
     Quagga.stop();
 });
 
