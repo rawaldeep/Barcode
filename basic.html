@@ -91,10 +91,9 @@ startCamera();
 videoElement.addEventListener('click', function () {
     if (mediaStream) {
         mediaStream.getTracks().forEach(track => track.stop());
+        startCamera();
     }
-    startCamera();
 });
 </script>
-
 </body>
 </html>
