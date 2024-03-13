@@ -42,6 +42,13 @@ function startCamera() {
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(cameraStream => {
             mediaStream = cameraStream;
+
+            if (videoElement.srcObject) {
+                var tracks = videoElement.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            videoElement.srcObject = null;  // Set to null before reassigning
             videoElement.srcObject = cameraStream;
 
             videoElement.onloadedmetadata = function (e) {
