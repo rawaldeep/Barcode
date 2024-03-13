@@ -77,6 +77,8 @@ var errorLogsDiv = document.createElement('div');
 errorLogsDiv.id = 'error-logs';
 document.body.appendChild(errorLogsDiv);
 
+var videoElement = document.querySelector('#your-camera-element'); // Move this line above its usage
+
 function logError(message) {
     // Log error to the div
     errorLogsDiv.innerHTML += `<p>${message}</p>`;
@@ -98,8 +100,6 @@ var config = {
     },
 };
 
-var videoElement = document.querySelector('#your-camera-element');
-
 navigator.mediaDevices.enumerateDevices()
   .then(devices => {
     console.log('Available Devices:', devices);
@@ -117,20 +117,7 @@ navigator.mediaDevices.getUserMedia({ video: true })
     console.error('Error accessing camera:', err);
   });
 
-  Quagga.init({
-    inputStream: {
-        type: 'LiveStream',
-        constraints: {
-            width: 480,
-            height: 320,
-            facingMode: 'environment', // or 'user' for the front camera
-        },
-        target: videoElement,
-    },
-    decoder: {
-        readers: ['code_128_reader', 'ean_reader'],
-    },
-}, function (err) {
+Quagga.init(config, function (err) {
     if (err) {
         logError(`Error initializing Quagga: ${err}`);
         console.error('Error initializing Quagga:', err);
