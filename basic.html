@@ -11,46 +11,26 @@
 </head>
 <body>
   <h1>Barcode Scanner</h1>
-  <video id="video" autoplay></video>
-  <p id="result"></p>
+  <video id="camera-feed" autoplay></video>
 
   <script>
-    // Check if the Barcode Detection API is supported
-    if ('BarcodeDetector' in window) {
-      // Get the video element and set up the camera stream
-      const video = document.getElementById('video');
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        .then(stream => {
-          video.srcObject = stream;
-          video.play();
+   // Get the video element
+const videoElement = document.getElementById('camera-feed');
 
-          // Create a new BarcodeDetector instance
-          const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code', 'code_128'] });
-
-          // Scan for barcodes every frame
-          const scanBarcodes = async () => {
-            try {
-              const barcodes = await barcodeDetector.detect(video);
-              const result = document.getElementById('result');
-              if (barcodes.length > 0) {
-                result.textContent = `Barcode detected: ${barcodes[0].rawValue}`;
-              } else {
-                result.textContent = 'No barcode detected';
-              }
-            } catch (error) {
-              console.error('Barcode detection failed:', error);
-            }
-            requestAnimationFrame(scanBarcodes);
-          };
-
-          scanBarcodes();
-        })
-        .catch(error => {
-          console.error('Failed to access camera:', error);
-        });
-    } else {
-      console.error('Barcode Detection API is not supported');
-    }
+// Check if the browser supports getUserMedia()
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+  // Request camera access
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function(stream) {
+      // Set the video source to the camera stream
+      videoElement.srcObject = stream;
+    })
+    .catch(function(err) {
+      console.error('Error accessing camera:', err);
+    });
+} else {
+  console.error('getUserMedia() is not supported by this browser');
+}
   </script>
 </body>
 </html>
