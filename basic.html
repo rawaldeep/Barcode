@@ -1,117 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Scanner</title>
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      height: 100vh;
-      background-color: #f0f0f0;
-    }
-
-    #your-camera-element {
+    video {
       width: 100%;
-      max-width: 640px;
-      height: auto;
-      border: 2px solid #333;
-      border-radius: 8px;
-    }
-
-    #log-container {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      max-width: 80%;
-      overflow-wrap: break-word;
+      max-width: 500px;
     }
   </style>
 </head>
 <body>
+  <h1>Barcode Scanner</h1>
+  <video id="video" autoplay></video>
+  <p id="result"></p>
 
-<video id="your-camera-element" playsinline autoplay></video>
-<div id="log-container"></div>
+  <script>
+    // Check if the Barcode Detection API is supported
+    if ('BarcodeDetector' in window) {
+      // Get the video element and set up the camera stream
+      const video = document.getElementById('video');
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.play();
 
-<script src="https://cdn.rawgit.com/serratus/quaggaJS/0.12.1/dist/quagga.min.js"></script>
-<!-- Your JavaScript code -->
-<script>
-var videoElement = document.getElementById('your-camera-element');
-var logContainer = document.getElementById('log-container');
-var quaggaInitialized = false;
+          // Create a new BarcodeDetector instance
+          const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code', 'code_128'] });
 
-function appendLog(message) {
-  logContainer.innerHTML += '<p>' + message + '</p>';
-}
+          // Scan for barcodes every frame
+          const scanBarcodes = async () => {
+            try {
+              const barcodes = await barcodeDetector.detect(video);
+              const result = document.getElementById('result');
+              if (barcodes.length > 0) {
+                result.textContent = `Barcode detected: ${barcodes[0].rawValue}`;
+              } else {
+                result.textContent = 'No barcode detected';
+              }
+            } catch (error) {
+              console.error('Barcode detection failed:', error);
+            }
+            requestAnimationFrame(scanBarcodes);
+          };
 
-function startCamera() {
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      videoElement.srcObject = stream;
-
-      videoElement.onloadedmetadata = function (e) {
-        appendLog('Camera Stream initialized');
-
-        if (!quaggaInitialized) {
-          initQuagga();
-          quaggaInitialized = true;
-        }
-      };
-    })
-    .catch(err => {
-      console.error('Error accessing camera:', err);
-      appendLog('Error accessing camera: ' + err);
-    });
-}
-
-function initQuagga() {
-  Quagga.init({
-    inputStream: {
-      name: 'Live',
-      type: 'LiveStream',
-      target: videoElement,
-    },
-    decoder: {
-      readers: ['ean_reader', 'code_128_reader'] // Add more readers if needed
+          scanBarcodes();
+        })
+        .catch(error => {
+          console.error('Failed to access camera:', error);
+        });
+    } else {
+      console.error('Barcode Detection API is not supported');
     }
-  }, function (err) {
-    if (err) {
-      console.error('Error initializing Quagga:', err);
-      appendLog('Error initializing Quagga: ' + err);
-      return;
-    }
-    Quagga.start();
-  });
-
-  Quagga.onDetected(function (result) {
-    var detectedCode = result.codeResult.code;
-    console.log('Barcode detected:', detectedCode);
-    appendLog('Barcode detected: ' + detectedCode);
-    alert('Barcode detected: ' + detectedCode);
-    Quagga.stop();
-  });
-}
-
-// Ensure the camera stream is started after user interaction
-document.body.addEventListener('click', function () {
-  if (quaggaInitialized) {
-    Quagga.stop();
-    quaggaInitialized = false;
-  }
-  startCamera();
-});
-
-// Start the camera initially
-startCamera();
-</script>
-
+  </script>
 </body>
 </html>
