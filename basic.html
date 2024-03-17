@@ -8,6 +8,11 @@
   #barcode-scanner {
     width: 100%;
     height: auto;
+    border: 2px solid transparent;
+    border-radius: 5px;
+  }
+  #barcode-scanner.scanning {
+    border-color: red;
   }
   #logs {
     margin-top: 20px;
@@ -28,6 +33,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
     function startScanner() {
+      const scannerElement = document.getElementById("barcode-scanner");
+      scannerElement.classList.add("scanning");
+
       Quagga.init({
         inputStream: {
           name: "Live",
@@ -45,6 +53,7 @@
       }, function(err) {
         if (err) {
           console.error(err);
+          logMessage("Error initializing scanner: " + err.message);
           return;
         }
         logMessage("Initialization finished. Ready to start");
@@ -55,11 +64,13 @@
         const barcode = data.codeResult.code;
         document.getElementById("barcode").textContent = "Barcode Detected: " + barcode;
         Quagga.stop();
+        scannerElement.classList.remove("scanning");
       });
 
       // Capture console logs
       const originalConsoleLog = console.log;
-      console.log = function(message) {
+      console.log = function() {
+        const message = Array.prototype.slice.call(arguments).join(' ');
         originalConsoleLog.apply(console, arguments);
         logMessage(message);
       };
