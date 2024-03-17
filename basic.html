@@ -1,36 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Barcode Scanner</title>
-  <style>
-    video {
-      width: 100%;
-      max-width: 500px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Barcode Reader</title>
+<style>
+  #barcode-scanner {
+    width: 100%;
+    height: auto;
+  }
+  #logs {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-height: 200px;
+    overflow-y: scroll;
+  }
+</style>
 </head>
 <body>
-  <h1>Barcode Scanner</h1>
-  <video id="camera-feed" autoplay></video>
+  <h1>Barcode Reader</h1>
+  <button onclick="startScanner()">Start Scanner</button>
+  <div id="barcode-scanner"></div>
+  <p id="barcode"></p>
+  <div id="logs"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
   <script>
-   // Get the video element
-const videoElement = document.getElementById('camera-feed');
+    function startScanner() {
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: document.querySelector('#barcode-scanner'),
+          constraints: {
+            width: 480,
+            height: 320,
+            facingMode: "environment" // or "user" for front camera
+          },
+        },
+        decoder: {
+          readers: ["ean_reader", "upc_reader"]
+        }
+      }, function(err) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        logMessage("Initialization finished. Ready to start");
+        Quagga.start();
+      });
 
-// Check if the browser supports getUserMedia()
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  // Request camera access
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(function(stream) {
-      // Set the video source to the camera stream
-      videoElement.srcObject = stream;
-    })
-    .catch(function(err) {
-      console.error('Error accessing camera:', err);
-    });
-} else {
-  console.error('getUserMedia() is not supported by this browser');
-}
+      Quagga.onDetected(data => {
+        const barcode = data.codeResult.code;
+        document.getElementById("barcode").textContent = "Barcode Detected: " + barcode;
+        Quagga.stop();
+      });
+
+      // Capture console logs
+      const originalConsoleLog = console.log;
+      console.log = function(message) {
+        originalConsoleLog.apply(console, arguments);
+        logMessage(message);
+      };
+
+      function logMessage(message) {
+        const logsContainer = document.getElementById("logs");
+        const logEntry = document.createElement("div");
+        logEntry.textContent = message;
+        logsContainer.appendChild(logEntry);
+      }
+    }
   </script>
 </body>
 </html>
