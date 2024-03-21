@@ -1,48 +1,53 @@
-// HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barcode Reader</title>
+  <style>
+    #barcode-scanner {
+      width: 100%;
+      max-width: 400px;
+    }
+  </style>
 </head>
 <body>
   <h1>Barcode Reader</h1>
-  <video id="barcode-scanner" width="300" height="200" autoplay></video>
-  <script src="barcode-reader.js"></script>
+  <video id="barcode-scanner" autoplay></video>
+
+  <script>
+    const video = document.getElementById('barcode-scanner');
+
+    // Check if the browser supports barcode detection
+    if ('BarcodeDetector' in window) {
+      const barcodeDetector = new BarcodeDetector();
+
+      // Access the user's camera
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(stream => {
+          video.srcObject = stream;
+          video.onloadedmetadata = () => {
+            video.play();
+            scanBarcode();
+          };
+        })
+        .catch(err => console.error('getUserMedia Error: ', err));
+
+      // Function to scan for barcodes
+      function scanBarcode() {
+        barcodeDetector.detect(video)
+          .then(barcodes => {
+            if (barcodes.length > 0) {
+              alert('Detected barcode: ' + barcodes[0].rawValue);
+              // You can do further processing with the detected barcode here
+            }
+            requestAnimationFrame(scanBarcode);
+          })
+          .catch(err => console.error('Barcode Detection Error: ', err));
+      }
+    } else {
+      alert('Barcode detection is not supported in this browser.');
+    }
+  </script>
 </body>
 </html>
-
-// JavaScript (barcode-reader.js)
-const video = document.getElementById('barcode-scanner');
-
-// Check if the browser supports barcode detection
-if ('BarcodeDetector' in window) {
-  const barcodeDetector = new BarcodeDetector();
-
-  // Access the user's camera
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      video.srcObject = stream;
-      video.onloadedmetadata = () => {
-        video.play();
-        scanBarcode();
-      };
-    })
-    .catch(err => console.error('getUserMedia Error: ', err));
-
-  // Function to scan for barcodes
-  function scanBarcode() {
-    barcodeDetector.detect(video)
-      .then(barcodes => {
-        if (barcodes.length > 0) {
-          alert('Detected barcode: ' + barcodes[0].rawValue);
-          // You can do further processing with the detected barcode here
-        }
-        requestAnimationFrame(scanBarcode);
-      })
-      .catch(err => console.error('Barcode Detection Error: ', err));
-  }
-} else {
-  alert('Barcode detection is not supported in this browser.');
-}
