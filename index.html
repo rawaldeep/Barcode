@@ -1,167 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barcode Scanner</title>
-  <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column; /* Updated to center the logs */
-      height: 100vh;
-      background-color: #f0f0f0;
-    }
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="ZXing for JS">
 
-    #scanner-container {
-      position: relative;
-      width: 80%;
-      max-width: 400px;
-    }
-
-    #your-camera-element {
-        width: 100%;
-        height: 300px; /* Adjust the height as needed */
-        object-fit: cover; /* Maintain aspect ratio */
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    }
-
-    #overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    #error-logs {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #fff;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      max-width: 80%;
-      overflow-wrap: break-word;
-    }
-  </style>
+    <title>ZXing TypeScript | Decoding from camera stream</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://unpkg.com/normalize.css@8.0.0/normalize.css">
+    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://unpkg.com/milligram@1.3.0/dist/milligram.min.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
 </head>
 <body>
+    <main class="wrapper" style="padding-top:2em">
+        <section class="container" id="demo-content">
+            <div>
+                <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
+            </div>
 
-<div id="scanner-container">
-  <!-- Camera element for QuaggaJS -->
-  <video id="your-camera-element" playsinline autoplay></video>
+            <!-- Modal -->
+            <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="scannerModalLabel">Scanner</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-  <!-- Overlay for visual feedback -->
-  <div id="overlay"></div>
-</div>
+            <div id="sourceSelectPanel" style="display:none">
+                <label for="sourceSelect">Change video source:</label>
+                <select id="sourceSelect" style="max-width:400px">
+                </select>
+            </div>
 
-<!-- Error logs div -->
-<div id="error-logs"></div>
+            <label>Result:</label>
+            <pre><code id="result"></code></pre>
+        </section>
+    </main>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    window.addEventListener('load', function () {
+    let codeReader;
+    let selectedDeviceId;
 
-<!-- Include QuaggaJS library -->
-<script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+    document.getElementById('openScannerButton').addEventListener('click', () => {
+      // Initialize the code reader if not already initialized
+      if (!codeReader) {
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        console.log('ZXing code reader initialized');
 
-<!-- Your JavaScript code -->
-<script>
-// Create an overlay div for visualization
-var overlay = document.createElement('div');
-overlay.id = 'overlay';
-document.body.appendChild(overlay);
+        // Start the camera when modal is shown
+        $('#scannerModal').on('shown.bs.modal', function () {
+          codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+            if (result) {
+              console.log(result);
+              $('#result').text(result.text);
+              $('#scannerModal').modal('hide');
+            }
+            if (err && !(err instanceof ZXing.NotFoundException)) {
+              console.error(err);
+              $('#result').text(err);
+            }
+          });
+        });
 
-// Create a div for error logs
-var errorLogsDiv = document.getElementById('error-logs');
+        // Stop the camera when modal is hidden
+        $('#scannerModal').on('hidden.bs.modal', function () {
+          codeReader.reset();
+        });
+      }
 
-// Function to log messages to the error div
-function logMessage(message, isError = false) {
-    errorLogsDiv.innerHTML += `<p style="color: ${isError ? 'red' : 'black'};">${message}</p>`;
-}
-
-// Override console.log to also log to the error div
-console.log = function (message) {
-    logMessage(message);
-    // Uncomment the line below if you want to keep the original console.log behavior
-    // return originalConsoleLog.apply(console, arguments);
-};
-
-var videoElement = document.querySelector('#your-camera-element');
-
-navigator.mediaDevices.enumerateDevices()
-  .then(devices => {
-    logMessage('Available Devices: ' + JSON.stringify(devices));
-  })
-  .catch(err => {
-    logMessage('Error enumerating devices: ' + err, true);
+      // List video input devices and show the modal
+      codeReader.listVideoInputDevices()
+        .then((videoInputDevices) => {
+          selectedDeviceId = videoInputDevices[0].deviceId;
+          $('#scannerModal').modal('show');
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    });
   });
-
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => {
-    videoElement.srcObject = stream;
-
-    videoElement.onloadedmetadata = function(e) {
-      logMessage('Camera Stream: ' + JSON.stringify(stream));
-      Quagga.start();
-    };
-  })
-  .catch(err => {
-    logMessage('Error accessing camera: ' + err, true);
-  });
-
-Quagga.init({
-    inputStream: {
-        type: 'LiveStream',
-        constraints: {
-            width: 480,
-            height: 320,
-            facingMode: 'environment', // or 'user' for the front camera
-        },
-        target: videoElement,
-    },
-    decoder: {
-        readers: ['code_128_reader', 'ean_reader'],
-    },
-}, function (err) {
-    if (err) {
-        logMessage('Error initializing Quagga: ' + err, true);
-        console.error('Error initializing Quagga:', err);
-        return;
-    }
-    Quagga.start();
-});
-
-Quagga.onDetected((data) => {
-    logMessage('Barcode detected: ' + data.codeResult.code);
-    Quagga.stop();
-});
-
-Quagga.onProcessed((result) => {
-    var drawingCtx = Quagga.canvas.ctx.overlay;
-    var drawingCanvas = Quagga.canvas.dom.overlay;
-
-    if (result) {
-        if (result.boxes) {
-            drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute('width')), parseInt(drawingCanvas.getAttribute('height')));
-            result.boxes.filter((box) => box !== result.box).forEach((box) => {
-                Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: 'green', lineWidth: 2 });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
             });
-        }
-
-        if (result.box) {
-            Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, { color: 'blue', lineWidth: 2 });
-        }
-
-        if (result.codeResult && result.codeResult.code) {
-            Quagga.ImageDebug.drawPath(result.line, { x: 'x', y: 'y' }, drawingCtx, { color: 'red', lineWidth: 3 });
-        }
+        });
     }
-});
 </script>
-
 </body>
 </html>
