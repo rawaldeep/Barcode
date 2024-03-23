@@ -136,8 +136,10 @@
                 log('Barcode scanned: ' + result.text);
                 $('#result').text(result.text);
                 updateScanHistory(result);
+                playBeepSound(); // Play beep sound
                 // Reset and continue scanning
                 codeReader.reset();
+                
               }
               if (err && !(err instanceof ZXing.NotFoundException)) {
                 log('Error scanning barcode: ' + err);
