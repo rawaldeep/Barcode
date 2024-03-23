@@ -12,6 +12,7 @@
     <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://unpkg.com/milligram@1.3.0/dist/milligram.min.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ffffff">
+    <audio id="beepSound" src="http://princezze.free.fr/sounds/bip2.MP3" preload="auto"></audio>
 </head>
 <body>
     <main class="wrapper" style="padding-top:2em">
@@ -82,6 +83,10 @@
         scanHistory.push(result.text);
         const historyList = $('#scanHistory');
         historyList.append($('<li>').text(result.text));
+      }
+    
+      function playBeepSound() {
+        document.getElementById('beepSound').play();
       }
 
       document.getElementById('openScannerButton').addEventListener('click', () => {
