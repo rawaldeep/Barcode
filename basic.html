@@ -50,6 +50,9 @@
 
             <h4>Scan History:</h4>
             <ul id="scanHistory"></ul>
+
+            <h4>Logs:</h4>
+            <pre><code id="logs"></code></pre>
         </section>
     </main>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
@@ -60,6 +63,12 @@
       let codeReader;
       let selectedDeviceId;
       const scanHistory = [];
+      const logs = [];
+
+      function log(message) {
+        logs.push(message);
+        $('#logs').text(logs.join('\n'));
+      }
 
       function showError(message) {
         $('#errorMessage').text(message).show();
@@ -80,37 +89,53 @@
 
         if (!codeReader) {
           codeReader = new ZXing.BrowserMultiFormatReader();
-          console.log('ZXing code reader initialized');
+          log('ZXing code reader initialized');
 
           // List available video input devices
           codeReader.listVideoInputDevices()
             .then((videoInputDevices) => {
-              // Populate the source selection dropdown
+              // Check if the facingMode constraint is supported
+              const supportsFacingMode = isFacingModeSupported();
+
+              // Filter the video input devices to get the rear camera
+              const rearCameras = supportsFacingMode
+                ? videoInputDevices.filter(device => device.kind === 'videoinput' && device.facingMode === 'environment')
+                : videoInputDevices.filter(device => device.kind === 'videoinput');
+
+              // Populate the source selection dropdown with rear cameras
               const sourceSelect = $('#sourceSelect');
-              videoInputDevices.forEach((device) => {
+              rearCameras.forEach((device) => {
                 sourceSelect.append($('<option>').val(device.deviceId).text(device.label));
               });
+
+              // Set the first available rear camera as the selected device
+              selectedDeviceId = rearCameras.length > 0 ? rearCameras[0].deviceId : null;
+
+              if (!selectedDeviceId) {
+                showError('No rear camera found on this device.');
+              }
+
               sourceSelect.on('change', () => {
                 selectedDeviceId = sourceSelect.val();
               });
-              selectedDeviceId = videoInputDevices[0].deviceId;
             })
             .catch((err) => {
               showError('Error listing video input devices: ' + err);
+              log('Error listing video input devices: ' + err);
             });
 
           // Start the camera when modal is shown
           $('#scannerModal').on('shown.bs.modal', function () {
             codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
               if (result) {
-                console.log(result);
+                log('Barcode scanned: ' + result.text);
                 $('#result').text(result.text);
                 updateScanHistory(result);
                 // Reset and continue scanning
                 codeReader.reset();
               }
               if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error(err);
+                log('Error scanning barcode: ' + err);
                 showError('Error scanning barcode: ' + err);
               }
             });
@@ -125,6 +150,15 @@
         $('#scannerModal').modal('show');
       });
     });
+
+    function isFacingModeSupported() {
+      const navigator = window.navigator;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return false;
+      }
+
+      return navigator.mediaDevices.getSupportedConstraints().facingMode;
+    }
   </script>
   <script>
     if ('serviceWorker' in navigator) {
