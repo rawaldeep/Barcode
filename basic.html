@@ -14,133 +14,98 @@
     <meta name="theme-color" content="#ffffff">
     <audio id="beepSound" src="http://princezze.free.fr/sounds/bip2.MP3" preload="auto"></audio>
 </head>
-<body>
-    <main class="wrapper" style="padding-top:2em">
-        <section class="container" id="demo-content">
-            <div>
-                <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
-            </div>
 
-            <!-- Modal -->
-            <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="scannerModalLabel">Scanner</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
+<div class="container" id="demo-content">
+    <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
+
+    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Scanner</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div id="sourceSelectPanel">
-                <label for="sourceSelect">Change video source:</label>
-                <select id="sourceSelect" style="max-width:400px"></select>
-            </div>
+    <label>Result:</label>
+    <pre><code id="result"></code></pre>
 
-            <label>Result:</label>
-            <pre><code id="result"></code></pre>
-
-            <div id="errorMessage" class="alert alert-danger" role="alert" style="display:none;"></div>
-
-            <h4>Scan History:</h4>
-            <ul id="scanHistory"></ul>
-
-            <h4>Logs:</h4>
-            <pre><code id="logs"></code></pre>
-        </section>
-    </main>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script>
-    window.addEventListener('load', function () {
-      let codeReader;
-      let selectedDeviceId;
-      const scanHistory = [];
-      const logs = [];
-
-      function log(message) {
-        logs.push(message);
-        $('#logs').text(logs.join('\n'));
-      }
-
-      function showError(message) {
-        $('#errorMessage').text(message).show();
-      }
-
-      function clearError() {
-        $('#errorMessage').hide();
-      }
-
-      function updateScanHistory(result) {
-        scanHistory.push(result.text);
-        const historyList = $('#scanHistory');
-        historyList.append($('<li>').text(result.text));
-      }
+    <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
     
-      function playBeepSound() {
-        document.getElementById('beepSound').play();
-      }
+    <h4>Scan History:</h4>
+    <ul id="scanHistory"></ul>
 
-      document.getElementById('openScannerButton').addEventListener('click', () => {
-        clearError();
+    <h4>Logs:</h4>
+    <pre><code id="logs"></code></pre>
+</div>
 
-        if (!codeReader) {
-          codeReader = new ZXing.BrowserMultiFormatReader();
-          log('ZXing code reader initialized');
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        let selectedDeviceId;
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+        const beepSound = document.getElementById('beepSound');
+        const scanHistoryList = $('#scanHistory');
+        const logsElement = $('#logs');
 
-          // Start the camera when modal is shown
-          $('#scannerModal').on('shown.bs.modal', function () {
-            const constraints = {
-                            video: {
-                                facingMode: 'environment', // Or use 'user' for front camera
-                                autoFocus: true // Enable autofocus
-                            }
-                        };
-            codeReader.decodeFromVideoDevice(undefined, 'video', constraints,(result, err) => {
-              if (result) {
-                log('Barcode scanned: ' + result.text);
-                $('#result').text(result.text);
-                updateScanHistory(result);
-                playBeepSound(); // Play beep sound
-                // Reset and continue scanning
-                codeReader.reset();
-                
-              }
-              if (err && !(err instanceof ZXing.NotFoundException)) {
-                log('Error scanning barcode: ' + err);
-                showError('Error scanning barcode: ' + err);
-              }
-            });
-          });
-
-          // Stop the camera when modal is hidden
-          $('#scannerModal').on('hidden.bs.modal', function () {
-            codeReader.reset();
-          });
+        function log(message) {
+            logsElement.append(document.createTextNode(message + '\n'));
         }
 
-        $('#scannerModal').modal('show');
-      });
-    });
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function(err) {
-                console.log('ServiceWorker registration failed: ', err);
-            });
+        $('#openScannerButton').click(async function () {
+            try {
+                // Get the device id of the first camera
+                const videoInputDevices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+                selectedDeviceId = videoInputDevices[0].deviceId;
+
+                $('#scannerModal').modal('show');
+
+                // Set the resolution to the highest possible
+                const constraints = {
+                    video: {
+                        deviceId: selectedDeviceId,
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+
+                codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                    if (result) {
+                        log('Barcode scanned: ' + result.text);
+                        $('#result').text(result.text);
+                        updateScanHistory(result.text);
+                        beepSound.play();
+                        codeReader.reset();
+                    } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                        log('Error scanning barcode: ' + err);
+                    }
+                });
+
+            } catch (error) {
+                log('Error initializing camera: ' + error);
+            }
         });
-    }
-  </script>
+
+        $('#scannerModal').on('hidden.bs.modal', function () {
+            codeReader.reset();
+            $('#result').text('');
+        });
+
+        function updateScanHistory(scannedText) {
+            scanHistoryList.append($('<li>').text(scannedText));
+        }
+    });
+</script>
+
 </body>
 </html>
