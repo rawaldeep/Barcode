@@ -131,7 +131,14 @@
 
           // Start the camera when modal is shown
           $('#scannerModal').on('shown.bs.modal', function () {
-            codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+            const constraints = {
+                            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+                            video: {
+                                facingMode: 'environment', // Or use 'user' for front camera
+                                autoFocus: true // Enable autofocus
+                            }
+                        };
+            codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', constraints,(result, err) => {
               if (result) {
                 log('Barcode scanned: ' + result.text);
                 $('#result').text(result.text);
