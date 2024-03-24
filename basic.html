@@ -65,7 +65,7 @@
         $('#openScannerButton').click(async function () {
             try {
                 // Get the device id of the first camera
-                const videoInputDevices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+                const videoInputDevices = await codeReader.listVideoInputDevices();
                 selectedDeviceId = videoInputDevices[0].deviceId;
 
                 $('#scannerModal').modal('show');
