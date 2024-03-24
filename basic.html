@@ -96,49 +96,15 @@
           codeReader = new ZXing.BrowserMultiFormatReader();
           log('ZXing code reader initialized');
 
-          // List available video input devices
-          codeReader.listVideoInputDevices()
-            .then((videoInputDevices) => {
-              // Check if the facingMode constraint is supported
-              const supportsFacingMode = isFacingModeSupported();
-
-              // Filter the video input devices to get the rear camera
-              const rearCameras = supportsFacingMode
-                ? videoInputDevices.filter(device => device.kind === 'videoinput' && device.facingMode === 'environment')
-                : videoInputDevices.filter(device => device.kind === 'videoinput');
-
-              // Populate the source selection dropdown with rear cameras
-              const sourceSelect = $('#sourceSelect');
-              rearCameras.forEach((device) => {
-                sourceSelect.append($('<option>').val(device.deviceId).text(device.label));
-              });
-
-              // Set the first available rear camera as the selected device
-              selectedDeviceId = rearCameras.length > 0 ? rearCameras[0].deviceId : null;
-
-              if (!selectedDeviceId) {
-                showError('No rear camera found on this device.');
-              }
-
-              sourceSelect.on('change', () => {
-                selectedDeviceId = sourceSelect.val();
-              });
-            })
-            .catch((err) => {
-              showError('Error listing video input devices: ' + err);
-              log('Error listing video input devices: ' + err);
-            });
-
           // Start the camera when modal is shown
           $('#scannerModal').on('shown.bs.modal', function () {
             const constraints = {
-                            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
                             video: {
                                 facingMode: 'environment', // Or use 'user' for front camera
                                 autoFocus: true // Enable autofocus
                             }
                         };
-            codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', constraints,(result, err) => {
+            codeReader.decodeFromVideoDevice(undefined, 'video', constraints,(result, err) => {
               if (result) {
                 log('Barcode scanned: ' + result.text);
                 $('#result').text(result.text);
@@ -164,15 +130,6 @@
         $('#scannerModal').modal('show');
       });
     });
-
-    function isFacingModeSupported() {
-      const navigator = window.navigator;
-      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-        return false;
-      }
-
-      return navigator.mediaDevices.getSupportedConstraints().facingMode;
-    }
   </script>
   <script>
     if ('serviceWorker' in navigator) {
