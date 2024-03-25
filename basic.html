@@ -15,97 +15,93 @@
     <audio id="beepSound" src="http://princezze.free.fr/sounds/bip2.MP3" preload="auto"></audio>
 </head>
 
-<div class="container" id="demo-content">
-    <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
+ <div class="container" style="padding-top: 2em;">
+        <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
 
-    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Scanner</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Scanner</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <label>Result:</label>
+        <pre><code id="result"></code></pre>
+
+        <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
+
+        <h4>Scan History:</h4>
+        <ul id="scanHistory"></ul>
+
+        <h4>Logs:</h4>
+        <pre><code id="logs"></code></pre>
     </div>
 
-    <label>Result:</label>
-    <pre><code id="result"></code></pre>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            const codeReader = new ZXing.BrowserMultiFormatReader();
+            const beepSound = document.getElementById('beepSound');
+            const logsElement = document.getElementById('logs');
 
-    <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
-    
-    <h4>Scan History:</h4>
-    <ul id="scanHistory"></ul>
-
-    <h4>Logs:</h4>
-    <pre><code id="logs"></code></pre>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script>
-    $(document).ready(function () {
-        let selectedDeviceId;
-        const codeReader = new ZXing.BrowserMultiFormatReader();
-        const beepSound = document.getElementById('beepSound');
-        const scanHistoryList = $('#scanHistory');
-        const logsElement = $('#logs');
-
-        function log(message) {
-            logsElement.append(document.createTextNode(message + '\n'));
-        }
-
-        $('#openScannerButton').click(async function () {
-            try {
-                // Get the device id of the first camera
-                const videoInputDevices = await codeReader.listVideoInputDevices();
-                selectedDeviceId = videoInputDevices[0].deviceId;
-
-                $('#scannerModal').modal('show');
-
-                // Set the resolution to the highest possible
-                const constraints = {
-                    video: {
-                        deviceId: selectedDeviceId,
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                };
-
-                codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
-                    if (result) {
-                        log('Barcode scanned: ' + result.text);
-                        $('#result').text(result.text);
-                        updateScanHistory(result.text);
-                        beepSound.play();
-                        codeReader.reset();
-                    } else if (err && !(err instanceof ZXing.NotFoundException)) {
-                        log('Error scanning barcode: ' + err);
-                    }
-                });
-
-            } catch (error) {
-                log('Error initializing camera: ' + error);
+            function log(message) {
+                logsElement.textContent += message + '\n';
             }
+
+            $('#openScannerButton').click(async function () {
+                try {
+                    // Trigger camera permission dialog
+                    await navigator.mediaDevices.getUserMedia({ video: true });
+
+                    // List video input devices
+                    const videoInputDevices = await codeReader.listVideoInputDevices();
+                    const rearCameraDevice = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear'));
+                    
+                    const selectedDeviceId = rearCameraDevice ? rearCameraDevice.deviceId : videoInputDevices[0]?.deviceId;
+
+                    $('#scannerModal').modal('show');
+
+                    const constraints = {
+                        video: {
+                            deviceId: { exact: selectedDeviceId },
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    };
+
+                    codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                        if (result) {
+                            log('Barcode scanned: ' + result.text);
+                            document.getElementById('result').textContent = result.text;
+                            document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
+                            beepSound.play();
+                            codeReader.reset();
+                        } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                            log('Error scanning barcode: ' + err);
+                        }
+                    });
+                } catch (error) {
+                    log('Error initializing camera or scanner: ' + error);
+                }
+            });
+
+            $('#scannerModal').on('hidden.bs.modal', function () {
+                codeReader.reset();
+                document.getElementById('result').textContent = '';
+            });
         });
-
-        $('#scannerModal').on('hidden.bs.modal', function () {
-            codeReader.reset();
-            $('#result').text('');
-        });
-
-        function updateScanHistory(scannedText) {
-            scanHistoryList.append($('<li>').text(scannedText));
-        }
-    });
-</script>
-
+    </script>
 </body>
 </html>
