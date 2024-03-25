@@ -87,6 +87,7 @@
                             document.getElementById('result').textContent = result.text;
                             document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
                             beepSound.play();
+                            $('#scannerModal').modal('hide'); // This line closes the modal
                             codeReader.reset();
                         } else if (err && !(err instanceof ZXing.NotFoundException)) {
                             log('Error scanning barcode: ' + err);
