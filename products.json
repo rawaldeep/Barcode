@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Product A",
+    "price": "€10",
+    "barcode": "123456789"
+  },
+  {
+    "name": "Product B",
+    "price": "€20",
+    "barcode": "987654321"
+  }
+]
