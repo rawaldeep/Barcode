@@ -59,6 +59,22 @@
             function log(message) {
                 logsElement.textContent += message + '\n';
             }
+            
+            let products = [];
+
+// Fetch the products JSON data
+function fetchProducts() {
+  fetch('products.json')
+    .then(response => response.json())
+    .then(data => {
+      products = data;
+      console.log('Products loaded:', products);
+    })
+    .catch(error => console.error('Failed to load products:', error));
+}
+
+// Call fetchProducts when the app loads
+fetchProducts();
 
             $('#openScannerButton').click(async function () {
                 try {
@@ -84,8 +100,14 @@
                     codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
                         if (result) {
                             log('Barcode scanned: ' + result.text);
-                            document.getElementById('result').textContent = result.text;
+                            /*document.getElementById('result').textContent = result.text;*/
                             document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
+                            const product = products.find(p => p.barcode === result.text);
+    if (product) {
+      document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+    } else {
+      document.getElementById('result').textContent = "Product not found.";
+    }
                             beepSound.play();
                             $('#scannerModal').modal('hide'); // This line closes the modal
                             codeReader.reset();
