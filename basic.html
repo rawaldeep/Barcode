@@ -102,8 +102,10 @@ function fetchProducts() {
                             
                             const product = products.find(p => p.barcode === result.text);
                             if (product) {
+                                log(product.name);
                                 document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
                             } else {
+                                log(product);
                                 document.getElementById('result').textContent = "Product not found for barcode "+result.text;
                             }
                             document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
