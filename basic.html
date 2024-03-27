@@ -52,15 +52,22 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script>
     let products = [];
-// Fetch the products JSON data
 function fetchProducts() {
   fetch('products.json')
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok: ' + response.statusText);
+      }
+      return response.json();
+    })
     .then(data => {
       products = data;
-      log('Products loaded: ' + JSON.stringify(products)); // Confirm products are loaded
+      console.log('Products loaded:', products);
     })
-    .catch(error => log('Failed to load products: ' + error));
+    .catch(error => {
+      console.error('Failed to load products:', error);
+      log(`Error: Failed to load products - ${error.message}`);
+    });
 }
         $(document).ready(function () {
             const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -68,7 +75,14 @@ function fetchProducts() {
             const logsElement = document.getElementById('logs');
 
             function log(message) {
-                logsElement.textContent += message + '\n';
+                // Update UI
+                const logsElement = document.getElementById('logs');
+                if (logsElement) {
+                    logsElement.textContent += message + '\n';
+                }
+    
+                // Log to console for development
+                console.log(message);
             }
 
             // Call fetchProducts when the app loads
@@ -102,11 +116,10 @@ function fetchProducts() {
                             
                             const product = products.find(p => p.barcode === result.text);
                             if (product) {
-                                log(product.name);
-                                document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+                                  document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
                             } else {
-                                log(product);
-                                document.getElementById('result').textContent = "Product not found for barcode "+result.text;
+                                  log(`No product found for scanned barcode: ${result.text}`);
+                                  document.getElementById('result').textContent = "Product not found for barcode: " + result.text;
                             }
                             document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
                             beepSound.play();
