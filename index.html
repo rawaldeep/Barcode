@@ -91,9 +91,54 @@ $(document).ready(function () {
     fetchProducts();
     const codeReader = new ZXing.BrowserMultiFormatReader();
     const beepSound = document.getElementById('beepSound');
-
+    const logsElement = document.getElementById('logs');
     $('#openScannerButton').click(async function () {
-        // Scanner button implementation
+    try {
+            // Trigger camera permission dialog
+            await navigator.mediaDevices.getUserMedia({ video: true });
+
+            // List video input devices
+            const videoInputDevices = await codeReader.listVideoInputDevices();
+            const rearCameraDevice = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear'));
+            
+            const selectedDeviceId = rearCameraDevice ? rearCameraDevice.deviceId : videoInputDevices[0]?.deviceId;
+
+            $('#scannerModal').modal('show');
+
+            const constraints = {
+                video: {
+                    deviceId: { exact: selectedDeviceId },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+
+            codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                if (result) {
+
+                    log('Barcode scanned: ' + result.text);
+                    /*document.getElementById('result').textContent = result.text;*/
+                    
+                    const product = products.find(p => p.barcode == result.text);
+
+                    if (product) {
+                        document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+                        alert(`Name: ${product.name}, Price: ${product.price}`);
+                    } else {
+                            log(`No product found for scanned barcode: ${result.text}`);
+                            document.getElementById('result').textContent = "Product not found for barcode: " + result.text;
+                    }
+                    document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
+                    beepSound.play();
+                    $('#scannerModal').modal('hide'); // This line closes the modal
+                    codeReader.reset();
+                } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                    log('Error scanning barcode: ' + err);
+                }
+            });
+        } catch (error) {
+            log('Error initializing camera or scanner: ' + error);
+        }
     });
 
     $('#scannerModal').on('hidden.bs.modal', function () {
