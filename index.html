@@ -3,13 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="ZXing for JS">
-    <title>Barcode Reader</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>Barcode Reader with Product Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
     <link rel="stylesheet" href="https://unpkg.com/normalize.css">
     <link rel="stylesheet" href="https://unpkg.com/milligram">
-    <audio id="beepSound" src="assets/sounds/beep.mp3" preload="auto"></audio>
 </head>
 <body>
 <div class="container" style="padding-top: 2em;">
@@ -31,7 +29,7 @@
         </div>
     </div>
 
-    <!-- Form for adding products -->
+    <!-- Add Product Form -->
     <div class="add-product-form">
         <h4>Add a Product</h4>
         <form id="productForm">
@@ -42,11 +40,25 @@
         </form>
     </div>
 
+    <!-- Edit Product Form -->
+    <div class="edit-product-form" style="display:none;">
+        <h4>Edit Product</h4>
+        <form id="editProductForm">
+            <input type="hidden" id="editProductId">
+            <input type="text" id="editProductName" placeholder="Product Name" required />
+            <input type="text" id="editProductPrice" placeholder="Price" required />
+            <input type="text" id="editProductBarcode" placeholder="Barcode" required />
+            <button type="submit" class="btn btn-info">Update Product</button>
+        </form>
+    </div>
+
     <label>Result:</label>
     <pre><code id="result"></code></pre>
     <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
+    
     <h4>Scan History:</h4>
     <ul id="scanHistory"></ul>
+    
     <h4>Logs:</h4>
     <pre><code id="logs"></code></pre>
 </div>
@@ -54,57 +66,77 @@
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script>
+// Product management functionality
 let products = [];
-function fetchProducts() {
-    return fetch('products.json')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        products = data;
-        log('Products loaded:', products);
-    })
-    .catch(error => {
-        console.error('Failed to load products:', error);
+
+function displayProducts() {
+    const scanHistory = document.getElementById('scanHistory');
+    scanHistory.innerHTML = ''; // Clear existing entries
+    products.forEach((product, index) => {
+        const li = document.createElement('li');
+        li.textContent = `Name: ${product.name}, Price: ${product.price}, Barcode: ${product.barcode}`;
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.setAttribute('data-index', index);
+        editButton.addEventListener('click', function() {
+            showEditForm(index);
+        });
+        li.appendChild(editButton);
+        scanHistory.appendChild(li);
     });
 }
 
-function log(...messages) {
-    const logsElement = document.getElementById('logs');
-    messages.forEach((message) => {
-        let messageToDisplay = '';
-        if (typeof message === 'object') {
-            messageToDisplay = JSON.stringify(message, null, 2);
-        } else {
-            messageToDisplay = message.toString();
-        }
-        logsElement.textContent += messageToDisplay + '\n';
-    });
-    logsElement.scrollTop = logsElement.scrollHeight;
-    console.log(...messages);
+function showEditForm(index) {
+    const product = products[index];
+    document.getElementById('editProductId').value = index;
+    document.getElementById('editProductName').value = product.name;
+    document.getElementById('editProductPrice').value = product.price;
+    document.getElementById('editProductBarcode')..value = product.barcode;
+    document.querySelector('.edit-product-form').style.display = 'block';
 }
 
+document.getElementById('productForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const newProduct = {
+        name: document.getElementById('productName').value,
+        price: document.getElementById('productPrice').value,
+        barcode: document.getElementById('productBarcode').value
+    };
+    products.push(newProduct);
+    displayProducts(); // Update the UI with the new product list
+    // Clear the form fields after submission
+    document.getElementById('productName').value = '';
+    document.getElementById('productPrice').value = '';
+    document.getElementById('productBarcode').value = '';
+    alert('Product added successfully!');
+});
+
+document.getElementById('editProductForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const index = parseInt(document.getElementById('editProductId').value, 10);
+    const updatedProduct = {
+        name: document.getElementById('editProductName').value,
+        price: document.getElementById('editProductPrice').value,
+        barcode: document.getElementById('editProductBarcode').value
+    };
+    products[index] = updatedProduct;
+    displayProducts(); // Refresh the product list display
+    document.querySelector('.edit-product-form').style.display = 'none'; // Hide the edit form
+    alert('Product updated successfully!');
+});
+
+// Initial call to display products if any are already in the array
+displayProducts();
+
+// Barcode scanner initialization and functionality (for completeness)
 $(document).ready(function () {
-    fetchProducts();
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    const beepSound = document.getElementById('beepSound');
-    const logsElement = document.getElementById('logs');
     $('#openScannerButton').click(async function () {
-    try {
-            // Trigger camera permission dialog
+        try {
             await navigator.mediaDevices.getUserMedia({ video: true });
-
-            // List video input devices
             const videoInputDevices = await codeReader.listVideoInputDevices();
-            const rearCameraDevice = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear'));
-            
-            const selectedDeviceId = rearCameraDevice ? rearCameraDevice.deviceId : videoInputDevices[0]?.deviceId;
-
+            const selectedDeviceId = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear')).deviceId;
             $('#scannerModal').modal('show');
-
             const constraints = {
                 video: {
                     deviceId: { exact: selectedDeviceId },
@@ -112,53 +144,21 @@ $(document).ready(function () {
                     height: { ideal: 1080 }
                 }
             };
-
             codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
                 if (result) {
-
-                    log('Barcode scanned: ' + result.text);
-                    /*document.getElementById('result').textContent = result.text;*/
-                    
-                    const product = products.find(p => p.barcode == result.text);
-
-                    if (product) {
-                        document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
-                        alert(`Name: ${product.name}, Price: ${product.price}`);
-                    } else {
-                            log(`No product found for scanned barcode: ${result.text}`);
-                            document.getElementById('result').textContent = "Product not found for barcode: " + result.text;
-                    }
-                    document.getElementById('scanHistory').innerHTML += `<li>${result.text}</li>`;
-                    beepSound.play();
-                    $('#scannerModal').modal('hide'); // This line closes the modal
+                    document.getElementById('result').textContent = `Scanned result: ${result.text}`;
+                    $('#scannerModal').modal('hide');
                     codeReader.reset();
                 } else if (err && !(err instanceof ZXing.NotFoundException)) {
-                    log('Error scanning barcode: ' + err);
+                    console.error('Error scanning barcode:', err);
                 }
             });
         } catch (error) {
-            log('Error initializing camera or scanner: ' + error);
+            console.error('Error initializing camera or scanner:', error);
         }
     });
-
     $('#scannerModal').on('hidden.bs.modal', function () {
         codeReader.reset();
-        document.getElementById('result').textContent = '';
-    });
-
-    // Form submission handler for adding new products
-    $('#productForm').on('submit', function(event) {
-        event.preventDefault();
-        const newProduct = {
-            name: $('#productName').val(),
-            price: $('#productPrice').val(),
-            barcode: $('#productBarcode').val()
-        };
-        products.push(newProduct);
-        $('#productName').val('');
-        $('#productPrice').val('');
-        $('#productBarcode').val('');
-        log('New product added:', newProduct);
     });
 });
 </script>
