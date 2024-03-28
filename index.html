@@ -3,17 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Barcode Reader with Flashlight Control</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Add any additional styles you need here */
-    </style>
+    <meta name="author" content="ZXing for JS">
+    <title>Barcode Reader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+    <link rel="stylesheet" href="https://unpkg.com/normalize.css">
+    <link rel="stylesheet" href="https://unpkg.com/milligram">
+    <audio id="beepSound" src="assets/sounds/beep.mp3" preload="auto"></audio>
 </head>
 <body>
 <div class="container" style="padding-top: 2em;">
     <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
-    <button class="btn btn-secondary" id="flashlightToggle">Toggle Flashlight</button>
-    <div id="scannerModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -29,56 +30,91 @@
             </div>
         </div>
     </div>
+
+    <!-- Form for adding products -->
+    <div class="add-product-form">
+        <h4>Add a Product</h4>
+        <form id="productForm">
+            <input type="text" id="productName" placeholder="Product Name" required />
+            <input type="text" id="productPrice" placeholder="Price" required />
+            <input type="text" id="productBarcode" placeholder="Barcode" required />
+            <button type="submit" class="btn btn-info">Add Product</button>
+        </form>
+    </div>
+
+    <label>Result:</label>
     <pre><code id="result"></code></pre>
+    <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
+    <h4>Scan History:</h4>
+    <ul id="scanHistory"></ul>
+    <h4>Logs:</h4>
+    <pre><code id="logs"></code></pre>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script>
-let activeTrack = null; // Keep track of the active video track for flashlight control
-
-async function toggleFlashlight(on) {
-    if (activeTrack && typeof activeTrack.applyConstraints === 'function') {
-        try {
-            await activeTrack.applyConstraints({ advanced: [{ torch: on }] });
-        } catch (error) {
-            console.error('Error toggling the flashlight:', error);
+let products = [];
+function fetchProducts() {
+    return fetch('products.json')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
-    }
+        return response.json();
+    })
+    .then(data => {
+        products = data;
+        log('Products loaded:', products);
+    })
+    .catch(error => {
+        console.error('Failed to load products:', error);
+    });
 }
 
-$('#openScannerButton').click(async function () {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        const videoElement = document.querySelector('video#video');
-        videoElement.srcObject = stream;
-        activeTrack = stream.getVideoTracks()[0];
-        const codeReader = new ZXing.BrowserMultiFormatReader();
+function log(...messages) {
+    const logsElement = document.getElementById('logs');
+    messages.forEach((message) => {
+        let messageToDisplay = '';
+        if (typeof message === 'object') {
+            messageToDisplay = JSON.stringify(message, null, 2);
+        } else {
+            messageToDisplay = message.toString();
+        }
+        logsElement.textContent += messageToDisplay + '\n';
+    });
+    logsElement.scrollTop = logsElement.scrollHeight;
+    console.log(...messages);
+}
 
-        $('#scannerModal').modal('show');
-
-        codeReader.decodeFromVideoElement(videoElement, (result, err) => {
-            if (result) {
-                console.log(`Barcode scanned: ${result.text}`);
-                document.getElementById('result').textContent = `Scanned barcode: ${result.text}`;
-                $('#scannerModal').modal('hide');
-                toggleFlashlight(false); // Turn off flashlight after scanning
-            } else if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error(err);
-            }
-        });
-    } catch (error) {
-        console.error('Error initializing camera or scanner:', error);
-    }
-});
-
-$('#flashlightToggle').click(() => toggleFlashlight());
-
-$('#scannerModal').on('hidden.bs.modal', function () {
+$(document).ready(function () {
+    fetchProducts();
     const codeReader = new ZXing.BrowserMultiFormatReader();
-    codeReader.reset();
-    document.getElementById('result').textContent = '';
-    toggleFlashlight(false); // Ensure flashlight is turned off when modal is closed
+    const beepSound = document.getElementById('beepSound');
+
+    $('#openScannerButton').click(async function () {
+        // Scanner button implementation
+    });
+
+    $('#scannerModal').on('hidden.bs.modal', function () {
+        codeReader.reset();
+        document.getElementById('result').textContent = '';
+    });
+
+    // Form submission handler for adding new products
+    $('#productForm').on('submit', function(event) {
+        event.preventDefault();
+        const newProduct = {
+            name: $('#productName').val(),
+            price: $('#productPrice').val(),
+            barcode: $('#productBarcode').val()
+        };
+        products.push(newProduct);
+        $('#productName').val('');
+        $('#productPrice').val('');
+        $('#productBarcode').val('');
+        log('New product added:', newProduct);
+    });
 });
 </script>
 </body>
