@@ -3,108 +3,83 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="ZXing for JS">
-
-    <title>barcode reader</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
-    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://unpkg.com/normalize.css@8.0.0/normalize.css">
-    <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null" href="https://unpkg.com/milligram@1.3.0/dist/milligram.min.css">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <title>Barcode Reader with Flashlight Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Add any additional styles you need here */
+    </style>
 </head>
 <body>
-    <main class="wrapper" style="padding-top:2em">
-        <section class="container" id="demo-content">
-            <div>
-                <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
-            </div>
-
-            <!-- Modal -->
-            <div class="modal fade" id="scannerModal" tabindex="-1" aria-labelledby="scannerModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="scannerModalLabel">Scanner</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
+<div class="container" style="padding-top: 2em;">
+    <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
+    <button class="btn btn-secondary" id="flashlightToggle">Toggle Flashlight</button>
+    <div id="scannerModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Scanner</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
+        </div>
+    </div>
+    <pre><code id="result"></code></pre>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let activeTrack = null; // Keep track of the active video track for flashlight control
 
-            <div id="sourceSelectPanel" style="display:none">
-                <label for="sourceSelect">Change video source:</label>
-                <select id="sourceSelect" style="max-width:400px">
-                </select>
-            </div>
-
-            <label>Result:</label>
-            <pre><code id="result"></code></pre>
-        </section>
-    </main>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script>
-    window.addEventListener('load', function () {
-    let codeReader;
-    let selectedDeviceId;
-
-    document.getElementById('openScannerButton').addEventListener('click', () => {
-      // Initialize the code reader if not already initialized
-      if (!codeReader) {
-        codeReader = new ZXing.BrowserMultiFormatReader();
-        console.log('ZXing code reader initialized');
-
-        // Start the camera when modal is shown
-        $('#scannerModal').on('shown.bs.modal', function () {
-          codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
-            if (result) {
-              console.log(result);
-              $('#result').text(result.text);
-              $('#scannerModal').modal('hide');
-            }
-            if (err && !(err instanceof ZXing.NotFoundException)) {
-              console.error(err);
-              $('#result').text(err);
-            }
-          });
-        });
-
-        // Stop the camera when modal is hidden
-        $('#scannerModal').on('hidden.bs.modal', function () {
-          codeReader.reset();
-        });
-      }
-
-      // List video input devices and show the modal
-      codeReader.listVideoInputDevices()
-        .then((videoInputDevices) => {
-          selectedDeviceId = videoInputDevices[0].deviceId;
-          $('#scannerModal').modal('show');
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    });
-  });
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            }, function(err) {
-                console.log('ServiceWorker registration failed: ', err);
-            });
-        });
+async function toggleFlashlight(on) {
+    if (activeTrack && typeof activeTrack.applyConstraints === 'function') {
+        try {
+            await activeTrack.applyConstraints({ advanced: [{ torch: on }] });
+        } catch (error) {
+            console.error('Error toggling the flashlight:', error);
+        }
     }
+}
+
+$('#openScannerButton').click(async function () {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        const videoElement = document.querySelector('video#video');
+        videoElement.srcObject = stream;
+        activeTrack = stream.getVideoTracks()[0];
+        const codeReader = new ZXing.BrowserMultiFormatReader();
+
+        $('#scannerModal').modal('show');
+
+        codeReader.decodeFromVideoElement(videoElement, (result, err) => {
+            if (result) {
+                console.log(`Barcode scanned: ${result.text}`);
+                document.getElementById('result').textContent = `Scanned barcode: ${result.text}`;
+                $('#scannerModal').modal('hide');
+                toggleFlashlight(false); // Turn off flashlight after scanning
+            } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                console.error(err);
+            }
+        });
+    } catch (error) {
+        console.error('Error initializing camera or scanner:', error);
+    }
+});
+
+$('#flashlightToggle').click(() => toggleFlashlight());
+
+$('#scannerModal').on('hidden.bs.modal', function () {
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader.reset();
+    document.getElementById('result').textContent = '';
+    toggleFlashlight(false); // Ensure flashlight is turned off when modal is closed
+});
 </script>
 </body>
 </html>
