@@ -137,7 +137,9 @@ function log(...messages) {
     // Also log to the console
     console.log(...messages);
 }
+fetchProducts();
     let selectedDeviceId;
+    const logsElement = document.getElementById('logs');
     const codeReader = new ZXing.BrowserBarcodeReader();
     const beepSound = document.getElementById('beepSound');
     const video = document.getElementById('video');
