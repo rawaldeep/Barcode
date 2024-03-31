@@ -155,7 +155,7 @@ fetchProducts();
                         height: { ideal: 1080 }
                     }
                 };
-                return codeReader.decodeOnceFromVideoDevice(constraints, selectedDeviceId, 'video');
+                return codeReader.decodeFromConstraints(constraints, selectedDeviceId, 'video');
             })
             .then((result) => {
                 document.getElementById('scannerModal').style.display = 'none';
