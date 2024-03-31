@@ -143,7 +143,9 @@ fetchProducts();
     const codeReader = new ZXing.BrowserBarcodeReader();
     const beepSound = document.getElementById('beepSound');
     const video = document.getElementById('video');
-
+    var myModal = new bootstrap.Modal(document.getElementById('scannerModal'), {
+      keyboard: false
+    });
             async function startScanner() {
             try {
                 const codeReader = new ZXing.BrowserMultiFormatReader();
@@ -169,7 +171,7 @@ fetchProducts();
                     if (result) {
                         // Process scan result
                         beepSound.play();
-                        $('#scannerModal').modal('hide');
+                        myModal.hide();
                         codeReader.reset();
                         handleScanResult(result.text);
                     } else if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -194,12 +196,12 @@ fetchProducts();
 
     $(document).ready(function () {
         $('#openScannerButton').click(function () {
-            $('#scannerModal').addClass('show');
+            myModal.show();
             startScanner();
         });
 
         $('#closeScannerButton').click(function () {
-            $('#scannerModal').modal('hide'); // This line closes the modal
+            myModal.hide(); // This line closes the modal
             codeReader.reset();
         });
         $('#scannerModal').on('hidden.bs.modal', function () {
