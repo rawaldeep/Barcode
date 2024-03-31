@@ -1,166 +1,123 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Barcode Reader with Product Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
-    <link rel="stylesheet" href="https://unpkg.com/normalize.css">
-    <link rel="stylesheet" href="https://unpkg.com/milligram">
+    <title>Barcode Reader</title>
+    <style>
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #scannerModal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #scannerModal.show {
+            display: flex;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 700px; /* Adjust based on your needs */
+        }
+
+        .scanner-border {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 10px solid green;
+            height: 300px;
+            width: 600px;
+        }
+
+        .scanner-controls {
+            position: absolute;
+            bottom: 30px; /* Adjust based on your needs */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .scanner-controls button {
+            padding: 10px 20px;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .scanner-controls button:active {
+            background-color: #ff766b;
+        }
+    </style>
 </head>
 <body>
-<div class="container" style="padding-top: 2em;">
-    <button class="btn btn-primary" id="openScannerButton">Start Scanner</button>
-    <div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Scanner</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <video id="video" width="100%" height="auto" style="border: 1px solid gray"></video>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Add Product Form -->
-    <div class="add-product-form">
-        <h4>Add a Product</h4>
-        <form id="productForm">
-            <input type="text" id="productName" placeholder="Product Name" required />
-            <input type="text" id="productPrice" placeholder="Price" required />
-            <input type="text" id="productBarcode" placeholder="Barcode" required />
-            <button type="submit" class="btn btn-info">Add Product</button>
-        </form>
+<div id="scannerModal">
+    <video id="video" autoplay playsinline></video>
+    <div class="scanner-border"></div>
+    <div class="scanner-controls">
+        <button id="closeScannerButton">Cancel</button>
     </div>
-
-    <!-- Edit Product Form -->
-    <div class="edit-product-form" style="display:none;">
-        <h4>Edit Product</h4>
-        <form id="editProductForm">
-            <input type="hidden" id="editProductId">
-            <input type="text" id="editProductName" placeholder="Product Name" required />
-            <input type="text" id="editProductPrice" placeholder="Price" required />
-            <input type="text" id="editProductBarcode" placeholder="Barcode" required />
-            <button type="submit" class="btn btn-info">Update Product</button>
-        </form>
-    </div>
-
-    <label>Result:</label>
-    <pre><code id="result"></code></pre>
-    <div id="errorMessage" class="alert alert-danger" style="display:none;"></div>
-    
-    <h4>Scan History:</h4>
-    <ul id="scanHistory"></ul>
-    
-    <h4>Logs:</h4>
-    <pre><code id="logs"></code></pre>
 </div>
+
+<button id="openScannerButton">Start Scanner</button>
+
+<audio id="beepSound" src="beep.mp3" preload="auto"></audio>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@latest/umd/index.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script>
-// Product management functionality
-let products = [];
+    let selectedDeviceId;
+    const codeReader = new ZXing.BrowserBarcodeReader();
+    const beepSound = document.getElementById('beepSound');
+    const video = document.getElementById('video');
 
-function displayProducts() {
-    const scanHistory = document.getElementById('scanHistory');
-    scanHistory.innerHTML = ''; // Clear existing entries
-    products.forEach((product, index) => {
-        const li = document.createElement('li');
-        li.textContent = `Name: ${product.name}, Price: ${product.price}, Barcode: ${product.barcode}`;
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Edit';
-        editButton.setAttribute('data-index', index);
-        editButton.addEventListener('click', function() {
-            showEditForm(index);
-        });
-        li.appendChild(editButton);
-        scanHistory.appendChild(li);
-    });
-}
-
-function showEditForm(index) {
-    const product = products[index];
-    document.getElementById('editProductId').value = index;
-    document.getElementById('editProductName').value = product.name;
-    document.getElementById('editProductPrice').value = product.price;
-    document.getElementById('editProductBarcode')..value = product.barcode;
-    document.querySelector('.edit-product-form').style.display = 'block';
-}
-
-document.getElementById('productForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const newProduct = {
-        name: document.getElementById('productName').value,
-        price: document.getElementById('productPrice').value,
-        barcode: document.getElementById('productBarcode').value
-    };
-    products.push(newProduct);
-    displayProducts(); // Update the UI with the new product list
-    // Clear the form fields after submission
-    document.getElementById('productName').value = '';
-    document.getElementById('productPrice').value = '';
-    document.getElementById('productBarcode').value = '';
-    alert('Product added successfully!');
-});
-
-document.getElementById('editProductForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    const index = parseInt(document.getElementById('editProductId').value, 10);
-    const updatedProduct = {
-        name: document.getElementById('editProductName').value,
-        price: document.getElementById('editProductPrice').value,
-        barcode: document.getElementById('editProductBarcode').value
-    };
-    products[index] = updatedProduct;
-    displayProducts(); // Refresh the product list display
-    document.querySelector('.edit-product-form').style.display = 'none'; // Hide the edit form
-    alert('Product updated successfully!');
-});
-
-// Initial call to display products if any are already in the array
-displayProducts();
-
-// Barcode scanner initialization and functionality (for completeness)
-$(document).ready(function () {
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    $('#openScannerButton').click(async function () {
-        try {
-            await navigator.mediaDevices.getUserMedia({ video: true });
-            const videoInputDevices = await codeReader.listVideoInputDevices();
-            const selectedDeviceId = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear')).deviceId;
-            $('#scannerModal').modal('show');
-            const constraints = {
-                video: {
-                    deviceId: { exact: selectedDeviceId },
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                }
-            };
-            codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
-                if (result) {
-                    document.getElementById('result').textContent = `Scanned result: ${result.text}`;
-                    $('#scannerModal').modal('hide');
-                    codeReader.reset();
-                } else if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error('Error scanning barcode:', err);
-                }
+    function startScanner() {
+        codeReader.getVideoInputDevices()
+            .then((videoInputDevices) => {
+                selectedDeviceId = videoInputDevices[0].deviceId;
+                return codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video');
+            })
+            .then((result) => {
+                document.getElementById('scannerModal').style.display = 'none';
+                console.log(result);
+                beepSound.play();
+                alert(result.text);
+            })
+            .catch((err) => {
+                console.error(err);
+                document.getElementById('scannerModal').style.display = 'none';
             });
-        } catch (error) {
-            console.error('Error initializing camera or scanner:', error);
-        }
+    }
+
+    $(document).ready(function () {
+        $('#openScannerButton').click(function () {
+            $('#scannerModal').addClass('show');
+            startScanner();
+        });
+
+        $('#closeScannerButton').click(function () {
+            $('#scannerModal').removeClass('show');
+            codeReader.reset();
+        });
     });
-    $('#scannerModal').on('hidden.bs.modal', function () {
-        codeReader.reset();
-    });
-});
 </script>
 </body>
 </html>
