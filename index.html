@@ -169,7 +169,7 @@ fetchProducts();
                     if (result) {
                         // Process scan result
                         beepSound.play();
-                        $('#scannerModal').modal('hide');
+                        document.getElementById('scannerModal').classList.remove('show');
                         codeReader.reset();
                         handleScanResult(result.text);
                     } else if (err && !(err instanceof ZXing.NotFoundException)) {
@@ -194,12 +194,12 @@ fetchProducts();
 
     $(document).ready(function () {
         $('#openScannerButton').click(function () {
-            $('#scannerModal').modal('show');
+            document.getElementById('scannerModal').classList.add('show');
             startScanner();
         });
 
         $('#closeScannerButton').click(function () {
-            $('#scannerModal').modal('hide'); // This line closes the modal
+            document.getElementById('scannerModal').classList.remove('show');; // This line closes the modal
             codeReader.reset();
         });
         $('#scannerModal').on('hidden.bs.modal', function () {
