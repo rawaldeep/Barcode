@@ -144,38 +144,53 @@ fetchProducts();
     const beepSound = document.getElementById('beepSound');
     const video = document.getElementById('video');
 
-    function startScanner() {
-        codeReader.getVideoInputDevices()
-            .then((videoInputDevices) => {
-                selectedDeviceId = videoInputDevices[0].deviceId;
-                 const constraints = {
+            async function startScanner() {
+            try {
+                const codeReader = new ZXing.BrowserMultiFormatReader();
+                const beepSound = document.getElementById('beepSound');
+
+                // Trigger camera permission dialog
+                await navigator.mediaDevices.getUserMedia({ video: true });
+
+                // List video input devices
+                const videoInputDevices = await codeReader.listVideoInputDevices();
+                const rearCameraDevice = videoInputDevices.find(device => device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear'));
+                const selectedDeviceId = rearCameraDevice ? rearCameraDevice.deviceId : videoInputDevices[0]?.deviceId;
+
+                const constraints = {
                     video: {
                         deviceId: { exact: selectedDeviceId },
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     }
                 };
-                return codeReader.decodeFromConstraints(constraints, selectedDeviceId, 'video');
-            })
-            .then((result) => {
-                document.getElementById('scannerModal').style.display = 'none';
-                log(result);
-                beepSound.play();
-                const product = products.find(p => p.barcode == result.text);
 
-                    if (product) {
-                        document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
-                        /*alert(`Name: ${product.name}, Price: ${product.price}`);*/
-                    } else {
-                            log(`No product found for scanned barcode: ${result.text}`);
-                            document.getElementById('result').textContent = "Product not found for barcode: " + result.text;
+                codeReader.decodeFromConstraints(constraints, 'video', (result, err) => {
+                    if (result) {
+                        // Process scan result
+                        beepSound.play();
+                        $('#scannerModal').modal('hide');
+                        codeReader.reset();
+                        handleScanResult(result.text);
+                    } else if (err && !(err instanceof ZXing.NotFoundException)) {
+                        log('Error scanning barcode: ' + err);
                     }
-            })
-            .catch((err) => {
-                console.error(err);
-                document.getElementById('scannerModal').style.display = 'none';
-            });
-    }
+                });
+            } catch (error) {
+                log('Error initializing camera or scanner: ' + error);
+            }
+        }
+
+        function handleScanResult(scanResult) {
+            const product = products.find(p => p.barcode == scanResult);
+            if (product) {
+                document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+                document.getElementById('scanHistory').innerHTML += `<li>${scanResult}</li>`;
+            } else {
+                log(`No product found for scanned barcode: ${scanResult}`);
+                document.getElementById('result').textContent = "Product not found for barcode: " + scanResult;
+            }
+        }
 
     $(document).ready(function () {
         $('#openScannerButton').click(function () {
