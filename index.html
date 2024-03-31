@@ -154,7 +154,15 @@ fetchProducts();
                 document.getElementById('scannerModal').style.display = 'none';
                 log(result);
                 beepSound.play();
-                alert(result.text);
+                const product = products.find(p => p.barcode == result.text);
+
+                    if (product) {
+                        document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+                        /*alert(`Name: ${product.name}, Price: ${product.price}`);*/
+                    } else {
+                            log(`No product found for scanned barcode: ${result.text}`);
+                            document.getElementById('result').textContent = "Product not found for barcode: " + result.text;
+                    }
             })
             .catch((err) => {
                 console.error(err);
