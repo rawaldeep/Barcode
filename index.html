@@ -148,7 +148,14 @@ fetchProducts();
         codeReader.getVideoInputDevices()
             .then((videoInputDevices) => {
                 selectedDeviceId = videoInputDevices[0].deviceId;
-                return codeReader.decodeOnceFromVideoDevice(selectedDeviceId, 'video');
+                 const constraints = {
+                    video: {
+                        deviceId: { exact: selectedDeviceId },
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+                return codeReader.decodeOnceFromVideoDevice(constraints, selectedDeviceId, 'video');
             })
             .then((result) => {
                 document.getElementById('scannerModal').style.display = 'none';
