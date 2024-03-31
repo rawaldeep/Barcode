@@ -169,7 +169,7 @@ fetchProducts();
         });
 
         $('#closeScannerButton').click(function () {
-            $('#scannerModal').removeClass('show');
+            $('#scannerModal').modal('hide'); // This line closes the modal
             codeReader.reset();
         });
     });
