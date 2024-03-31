@@ -172,6 +172,10 @@ fetchProducts();
             $('#scannerModal').modal('hide'); // This line closes the modal
             codeReader.reset();
         });
+        $('#scannerModal').on('hidden.bs.modal', function () {
+            codeReader.reset();
+            document.getElementById('result').textContent = '';
+        });
     });
 </script>
 </body>
