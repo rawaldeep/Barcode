@@ -193,8 +193,12 @@ fetchProducts();
         function handleScanResult(scanResult) {
             const product = products.find(p => p.barcode == scanResult);
             if (product) {
-                document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
-                document.getElementById('scanHistory').innerHTML += `<li>${scanResult}</li>`;
+                //document.getElementById('result').textContent = `Name: ${product.name}, Price: ${product.price}`;
+                let resultText = `Name: ${product.name}, Price: ${product.price}`;
+                let listItem = `<li>${resultText} <button onclick="promptUpdate('${product.id}')">Update</button></li>`;
+                document.getElementById('scanHistory').innerHTML += listItem;
+                document.getElementById('result').textContent = resultText;
+                //document.getElementById('scanHistory').innerHTML += `<li>${scanResult}</li>`;
             } else {
                 log(`No product found for scanned barcode: ${scanResult}`);
                 document.getElementById('result').textContent = "Product not found for barcode: " + scanResult;
