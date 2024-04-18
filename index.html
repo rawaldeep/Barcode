@@ -204,6 +204,11 @@ fetchProducts();
                 document.getElementById('result').textContent = "Product not found for barcode: " + scanResult;
             }
         }
+        
+        function promptUpdate(productId) {
+            log(`Update button clicked for product ID: ${productId}`);
+                // Future implementation will go here
+        }
 
     $(document).ready(function () {
         $('#openScannerButton').click(function () {
