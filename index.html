@@ -224,6 +224,8 @@ fetchProducts();
             codeReader.reset();
             document.getElementById('result').textContent = '';
         });
+        const apiKey = process.env.MY_API_KEY;
+        console.log(`Your API key is: ${apiKey}`);
     });
 </script>
 </body>
